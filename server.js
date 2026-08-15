@@ -11,6 +11,13 @@ const app = express();
 const port = Number(process.env.PORT) || 3000;
 const model = process.env.OPENAI_MODEL || "gpt-5.6-luna";
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
+const STUDY_COOKIE = "ce2134_study_assignment";
+const STUDY_COOKIE_MAX_AGE_SECONDS = 14 * 24 * 60 * 60;
+const studySecret = process.env.STUDY_SECRET || "";
+const studyCodes = {
+  A: process.env.STUDY_A_CODE || "",
+  B: process.env.STUDY_B_CODE || "",
+};
 
 app.set("trust proxy", 1);
 app.use(express.json({ limit: "32kb" }));
@@ -53,6 +60,50 @@ function cleanHistory(history) {
       content: cleanText(message?.content, 1000),
     }))
     .filter((message) => message.content);
+}
+
+function timingSafeTextEqual(left, right) {
+  const leftBuffer = Buffer.from(String(left));
+  const rightBuffer = Buffer.from(String(right));
+  return leftBuffer.length === rightBuffer.length
+    && crypto.timingSafeEqual(leftBuffer, rightBuffer);
+}
+
+function parseCookies(req) {
+  const cookies = {};
+  for (const entry of String(req.headers.cookie || "").split(";")) {
+    const separator = entry.indexOf("=");
+    if (separator < 1) continue;
+    const key = entry.slice(0, separator).trim();
+    const value = entry.slice(separator + 1).trim();
+    try {
+      cookies[key] = decodeURIComponent(value);
+    } catch {
+      cookies[key] = value;
+    }
+  }
+  return cookies;
+}
+
+function createStudyToken(condition) {
+  const signature = crypto
+    .createHmac("sha256", studySecret)
+    .update(condition)
+    .digest("hex");
+  return `${condition}.${signature}`;
+}
+
+function getStudyCondition(req) {
+  if (!studySecret) return null;
+  const token = parseCookies(req)[STUDY_COOKIE] || "";
+  const [condition, signature, extra] = token.split(".");
+  if (extra || !["A", "B"].includes(condition) || !signature) return null;
+  const expected = createStudyToken(condition).slice(2);
+  return timingSafeTextEqual(signature, expected) ? condition : null;
+}
+
+function studyConfigurationReady() {
+  return Boolean(studySecret && studyCodes.A && studyCodes.B);
 }
 
 function finiteNumber(value, min, max, fallback = null) {
@@ -156,6 +207,46 @@ function formatPressureContext(context = {}) {
   return fields.map(([label, value]) => `${label}: ${value}`).join("\n");
 }
 
+function readableNumber(value, digits = 2) {
+  return Number(value).toFixed(digits);
+}
+
+function ruleBasedCoachReply(question, pressure) {
+  const q = question.toLowerCase();
+
+  if (q.includes("hint")) {
+    if (
+      pressure.topLayerEnabled
+      && pressure.sensorDepth > pressure.topLayerDepth
+    ) {
+      return `Split the column at the interface. Calculate ρgh for ${readableNumber(pressure.topDepthAboveSensor)} m of ${pressure.topFluid}, then for ${readableNumber(pressure.bottomDepthAboveSensor)} m of ${pressure.bottomFluid}, and add them.${pressure.pressureReference === "absolute" ? " Add atmospheric pressure last." : ""}`;
+    }
+    return `Use the density of ${pressure.sensorLayer} and the vertical depth ${readableNumber(pressure.sensorDepth)} m in p = ρgh.${pressure.pressureReference === "absolute" ? " Then add atmospheric pressure." : " Convert Pa to kPa by dividing by 1000."}`;
+  }
+
+  if (q.includes("gage") || q.includes("absolute") || q.includes("atmos")) {
+    return `Gage pressure is measured relative to local atmospheric pressure. Absolute pressure is measured relative to a perfect vacuum: p_abs = p_atm + p_g. At the open free surface, gage pressure is 0 kPa while absolute pressure is ${readableNumber(pressure.atmosphericPressure, 1)} kPa.`;
+  }
+
+  if (q.includes("slope") || q.includes("graph")) {
+    return "The pressure-depth slope is dp/dh = ρg. A denser fluid makes the graph steeper. With two layers, the change in slope marks the fluid interface; pressure itself remains continuous there.";
+  }
+
+  if (q.includes("layer") || q.includes("add")) {
+    return "Each layer adds the weight per unit area of fluid above the sensor. For two layers, p_g = ρ₁gh₁ + ρ₂gh₂. Use each density only with its own vertical depth.";
+  }
+
+  if (q.includes("unit") || q.includes("kpa") || q.includes("pa")) {
+    return "Using density in kg/m³, g in m/s², and depth in m gives pressure in pascals. Divide by 1000 to report kilopascals.";
+  }
+
+  if (pressure.mode === "challenge" && !pressure.answerRevealed) {
+    return "Start with the fluid directly below the free surface and account for every layer above the sensor. I will keep the numerical answer hidden while the challenge is active.";
+  }
+
+  return `At ${readableNumber(pressure.sensorDepth)} m, the gage pressure is ${readableNumber(pressure.gagePressure)} kPa. ${pressure.pressureReference === "absolute" ? `Adding ${readableNumber(pressure.atmosphericPressure, 1)} kPa gives ${readableNumber(pressure.expectedPressure)} kPa absolute.` : "Pressure rises with depth because more fluid weight is supported above the sensor."}`;
+}
+
 function coachInstructions() {
   return [
     "You are the AI Coach for a CE2134 hydrostatic-pressure column lab.",
@@ -182,25 +273,48 @@ function extractReply(data) {
 }
 
 app.get("/api/health", (req, res) => {
+  const condition = getStudyCondition(req);
   res.json({
     ok: true,
-    aiConfigured: Boolean(process.env.OPENAI_API_KEY),
+    coachReady: condition === "B" || Boolean(process.env.OPENAI_API_KEY),
+    studyAssigned: Boolean(condition),
+    studyConfigurationReady: studyConfigurationReady(),
     model,
   });
 });
 
-app.post("/api/chat", coachRateLimit, async (req, res) => {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    return res.status(503).json({ error: "AI Coach is not configured yet." });
+app.get("/study/:condition/:code", (req, res) => {
+  const condition = cleanText(req.params.condition, 1).toUpperCase();
+  const code = cleanText(req.params.code, 200);
+
+  if (!studyConfigurationReady()) {
+    return res.status(503).send("Study links are not configured yet.");
   }
 
+  if (!["A", "B"].includes(condition)) {
+    return res.status(404).send("Invalid study link.");
+  }
+
+  if (!timingSafeTextEqual(code, studyCodes[condition])) {
+    return res.status(404).send("Invalid study link.");
+  }
+
+  const token = encodeURIComponent(createStudyToken(condition));
+  res.setHeader(
+    "Set-Cookie",
+    `${STUDY_COOKIE}=${token}; Path=/; Max-Age=${STUDY_COOKIE_MAX_AGE_SECONDS}; HttpOnly; Secure; SameSite=Lax`,
+  );
+  return res.redirect(302, "/");
+});
+
+app.post("/api/chat", coachRateLimit, async (req, res) => {
   const question = cleanText(req.body?.question, 800);
   if (!question) {
     return res.status(400).json({ error: "Please enter a question." });
   }
 
   const history = cleanHistory(req.body?.history);
+  const pressure = getPressureContext(req.body?.context);
   const gameContext = formatPressureContext(req.body?.context);
   const sessionSource = cleanText(req.body?.sessionId, 160)
     || req.ip
@@ -210,6 +324,34 @@ app.post("/api/chat", coachRateLimit, async (req, res) => {
     .update(sessionSource)
     .digest("hex")
     .slice(0, 64);
+  const assignedCondition = getStudyCondition(req);
+  const condition = assignedCondition || "A";
+
+  function sendCoachReply(reply, source) {
+    console.log(JSON.stringify({
+      event: "coach_reply",
+      source,
+      assignedCondition: assignedCondition || "unassigned",
+      session: safetyIdentifier.slice(0, 12),
+      time: new Date().toISOString(),
+    }));
+    return res.json({ reply, source });
+  }
+
+  if (condition === "B") {
+    return sendCoachReply(
+      ruleBasedCoachReply(question, pressure),
+      "rule_based",
+    );
+  }
+
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    return sendCoachReply(
+      ruleBasedCoachReply(question, pressure),
+      "api_fallback",
+    );
+  }
 
   try {
     const upstream = await fetch("https://api.openai.com/v1/responses", {
@@ -237,22 +379,23 @@ app.post("/api/chat", coachRateLimit, async (req, res) => {
     if (!upstream.ok) {
       const details = (await upstream.text()).slice(0, 800);
       console.error(`OpenAI request failed (${upstream.status}): ${details}`);
-      const status = upstream.status === 429 ? 429 : 502;
-      return res.status(status).json({
-        error: "The AI Coach is temporarily unavailable.",
-      });
+      return sendCoachReply(
+        ruleBasedCoachReply(question, pressure),
+        "api_fallback",
+      );
     }
 
     const data = await upstream.json();
     const reply = extractReply(data);
     if (!reply) throw new Error("OpenAI returned an empty reply");
 
-    return res.json({ reply });
+    return sendCoachReply(reply, "llm");
   } catch (error) {
     console.error("AI Coach error:", error);
-    return res.status(500).json({
-      error: "The AI Coach is temporarily unavailable.",
-    });
+    return sendCoachReply(
+      ruleBasedCoachReply(question, pressure),
+      "api_fallback",
+    );
   }
 });
 
