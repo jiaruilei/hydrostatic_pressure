@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hydrostatic Pressure (Week 2)</title>
+  <style>
+    :root {
+      --navy:#0b1930;
+      --navy-2:#13294b;
+      --panel:#ffffff;
+      --surface:#f4f7fb;
+      --line:#dce4ee;
+      --ink:#142033;
+      --muted:#5d6b7d;
+      --blue:#2563eb;
+      --blue-dark:#1d4ed8;
+      --cyan:#38bdf8;
+      --oil:#f2c86b;
+      --water:#4aa3e8;
+      --good:#047857;
+      --warn:#b45309;
+      --bad:#b91c1c;
+      --shadow:0 16px 42px rgba(15,23,42,.10);
+    }
+
+    * { box-sizing:border-box; }
+    html { font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; }
+    body {
+      margin:0;
+      min-height:100vh;
+      padding:22px;
+      color:var(--ink);
+      background:#fff;
+      font-family:inherit;
+    }
+    button,input,select,textarea { font:inherit; }
+    button { cursor:pointer; }
+    button:disabled { cursor:not-allowed; opacity:.55; }
+    [hidden] { display:none !important; }
+
+    .lab {
+      width:min(1240px,100%);
+      margin:0 auto;
+      overflow:hidden;
+      border:1px solid #e2e8f0;
+      border-radius:20px;
+      background:#fff;
+      box-shadow:var(--shadow);
+    }
+    .topbar {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:18px;
+      padding:18px 22px;
+      color:var(--ink);
+      border-bottom:1px solid var(--line);
+      background:#fff;
+    }
+    .eyebrow { margin:0 0 3px; color:var(--blue); font-size:12px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; }
+    h1 { margin:0; font-size:clamp(21px,2.5vw,30px); line-height:1.15; }
+    .top-actions { display:flex; align-items:center; gap:10px; }
+    .mode-switch { display:flex; padding:3px; border:1px solid #d7e0eb; border-radius:10px; background:#f1f5f9; }
+    .mode-switch button { min-width:88px; padding:8px 12px; border:0; border-radius:7px; color:#475569; background:transparent; font-weight:700; }
+    .mode-switch button.active { color:#fff; background:var(--blue); }
+
+    .workspace { display:grid; grid-template-columns:290px minmax(0,1fr); background:#fff; }
+    .controls { padding:18px; border-right:1px solid var(--line); background:#fbfdff; }
+    .control-group + .control-group { margin-top:17px; padding-top:16px; border-top:1px solid #e7edf4; }
+    .group-title { margin:0 0 10px; color:#34445a; font-size:12px; font-weight:800; letter-spacing:.07em; text-transform:uppercase; }
+    label { display:block; margin:10px 0 6px; color:#27364b; font-size:13px; font-weight:700; }
+    select,input[type="number"],textarea {
+      width:100%;
+      padding:9px 10px;
+      border:1px solid #cbd6e4;
+      border-radius:9px;
+      color:var(--ink);
+      background:#fff;
+    }
+    select:focus,input:focus,textarea:focus,button:focus-visible { outline:3px solid rgba(37,99,235,.22); outline-offset:1px; }
+    input[type="range"] { width:100%; accent-color:var(--blue); }
+    .label-row { display:flex; align-items:baseline; justify-content:space-between; gap:8px; }
+    .live-value { color:var(--blue-dark); font-size:13px; font-variant-numeric:tabular-nums; }
+    .density-row { display:grid; grid-template-columns:1fr 88px; gap:8px; }
+    .switch-row { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .switch-row label { margin:0; }
+    .toggle { width:42px; height:24px; accent-color:var(--blue); }
+    .segmented { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+    .segmented button { padding:9px; border:1px solid #cbd6e4; border-radius:9px; color:#42526a; background:#fff; font-weight:700; }
+    .segmented button.active { color:#fff; border-color:var(--blue); background:var(--blue); }
+    .secondary-button,.primary-button,.text-button {
+      width:100%;
+      padding:10px 12px;
+      border-radius:9px;
+      font-weight:800;
+    }
+    .primary-button { border:1px solid var(--blue); color:#fff; background:var(--blue); }
+    .primary-button:hover { background:var(--blue-dark); }
+    .secondary-button { border:1px solid #b9c8da; color:#233651; background:#fff; }
+    .secondary-button:hover { background:#f0f5fb; }
+    .text-button { border:0; color:var(--blue-dark); background:transparent; }
+
+    .experiment { min-width:0; padding:18px; background:#f8fafc; }
+    .reading-bar { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin-bottom:12px; }
+    .reading { padding:11px 13px; border:1px solid var(--line); border-radius:11px; background:#fff; }
+    .reading span { display:block; color:var(--muted); font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; }
+    .reading strong { display:block; margin-top:3px; color:#172b4d; font-size:20px; font-variant-numeric:tabular-nums; }
+    .visual-grid { display:grid; grid-template-columns:minmax(360px,1.25fr) minmax(260px,.85fr); gap:12px; }
+    .visual-card { position:relative; min-width:0; overflow:hidden; border:1px solid var(--line); border-radius:14px; background:#fff; }
+    .visual-title { position:absolute; z-index:2; top:12px; left:14px; margin:0; color:#31445f; font-size:15px; font-weight:800; }
+    .tank-card,.graph-card { height:470px; }
+    svg { display:block; width:100%; height:100%; }
+    svg text { font-family:inherit; }
+    #sensorTarget { cursor:ns-resize; }
+    .result-panel { margin-top:12px; padding:14px; border:1px solid var(--line); border-radius:13px; background:#fff; }
+    .result-row { display:flex; align-items:flex-start; justify-content:space-between; gap:18px; }
+    .result-label { margin:0 0 4px; color:var(--muted); font-size:12px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; }
+    .equation { margin:0; color:#24364f; font-family:inherit; font-size:16px; line-height:1.45; }
+    .challenge-form { display:grid; grid-template-columns:minmax(150px,220px) auto auto; align-items:end; gap:9px; }
+    .challenge-form label { margin:0; }
+    .challenge-feedback { min-height:22px; margin:10px 0 0; color:var(--muted); font-size:14px; font-weight:700; }
+    .challenge-feedback.good { color:var(--good); }
+    .challenge-feedback.warn { color:var(--warn); }
+    .challenge-feedback.bad { color:var(--bad); }
+
+    .coach-card { padding:18px; border-top:1px solid var(--line); background:linear-gradient(135deg,#f8fbff,#eef5ff); }
+    .coach-header { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px; }
+    .coach-title { display:flex; align-items:center; gap:10px; color:#172b4d; font-size:18px; font-weight:850; }
+    .coach-icon { display:grid; width:36px; height:36px; place-items:center; border-radius:12px; color:#fff; background:linear-gradient(135deg,#2563eb,#7c3aed); box-shadow:0 8px 18px rgba(37,99,235,.2); }
+    .coach-status { display:inline-flex; align-items:center; gap:6px; color:#5d6b7d; font-size:12px; }
+    .coach-status::before { width:8px; height:8px; border-radius:50%; background:#f59e0b; content:""; }
+    .coach-status.online::before { background:#10b981; }
+    .coach-log { height:340px; overflow:auto; padding:12px; border:1px solid #d7e2ef; border-radius:11px; background:#fff; }
+    .coach-message { width:fit-content; max-width:88%; margin:0 0 9px; padding:9px 11px; border-radius:11px; font-size:14px; line-height:1.45; white-space:pre-wrap; }
+    .coach-message.coach { color:#1e3a8a; border:1px solid #dbeafe; background:#eff6ff; }
+    .coach-message.user { margin-left:auto; color:#fff; background:var(--blue); }
+    .coach-message.pending { color:#64748b; font-style:italic; }
+    .coach-chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+    .coach-chips button { padding:7px 10px; border:1px solid #bdd4f5; border-radius:8px; color:#1d4ed8; background:#fff; font-size:12px; font-weight:700; }
+    .coach-form { display:grid; grid-template-columns:1fr 92px; gap:9px; margin-top:10px; }
+    .coach-form textarea { min-height:60px; resize:vertical; }
+    .coach-form button { border:0; border-radius:9px; color:#fff; background:var(--blue); font-weight:800; }
+
+    @media (max-width:960px) {
+      body { padding:10px; }
+      .workspace { grid-template-columns:250px minmax(0,1fr); }
+      .visual-grid { grid-template-columns:1fr; }
+      .tank-card,.graph-card { height:410px; }
+    }
+    @media (max-width:720px) {
+      body { padding:0; background:#fff; }
+      .lab { border:0; border-radius:0; box-shadow:none; }
+      .topbar { align-items:flex-start; flex-direction:column; }
+      .top-actions { width:100%; justify-content:space-between; }
+      .workspace { grid-template-columns:1fr; }
+      .controls { border-right:0; border-bottom:1px solid var(--line); }
+      .reading-bar { grid-template-columns:1fr 1fr; }
+      .reading:last-child { grid-column:1 / -1; }
+      .visual-grid { grid-template-columns:1fr; }
+      .tank-card { height:430px; }
+      .graph-card { height:360px; }
+      .challenge-form { grid-template-columns:1fr 1fr; }
+      .challenge-form label { grid-column:1 / -1; }
+      .coach-form { grid-template-columns:1fr; }
+      .coach-form button { min-height:44px; }
+      .coach-message { max-width:96%; }
+    }
+    @media (max-width:430px) {
+      .experiment,.controls,.coach-card { padding:14px; }
+      .reading strong { font-size:17px; }
+      .tank-card { height:390px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="lab">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">CE2134 Â· Fluid Mechanics</p>
+        <h1>Hydrostatic Pressure (Week 2)</h1>
+      </div>
+      <div class="top-actions">
+        <div class="mode-switch" role="group" aria-label="Learning mode">
+          <button type="button" id="exploreMode" class="active" aria-pressed="true">Explore</button>
+          <button type="button" id="challengeMode" aria-pressed="false">Challenge</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <aside class="controls" aria-label="Pressure column controls">
+        <section class="control-group">
+          <h2 class="group-title">Fluid column</h2>
+          <label for="bottomFluid">Bottom fluid</label>
+          <div class="density-row">
+            <select id="bottomFluid">
+              <option value="1000">Water</option>
+              <option value="1025">Seawater</option>
+              <option value="1260">Glycerin</option>
+              <option value="13600">Mercury</option>
+            </select>
+            <input id="bottomDensity" type="number" min="100" max="14000" step="1" value="1000" aria-label="Bottom fluid density in kilograms per cubic metre" />
+          </div>
+
+          <div class="label-row">
+            <label for="bottomDepth">Bottom depth</label>
+            <span class="live-value" id="bottomDepthValue">3.0 m</span>
+          </div>
+          <input id="bottomDepth" type="range" min="0.5" max="5" step="0.1" value="3" />
+
+          <div class="switch-row" style="margin-top:14px">
+            <label for="topEnabled">Add a top layer</label>
+            <input class="toggle" id="topEnabled" type="checkbox" />
+          </div>
+
+          <div id="topControls" hidden>
+            <label for="topFluid">Top fluid</label>
+            <div class="density-row">
+              <select id="topFluid">
+                <option value="800">Light oil</option>
+                <option value="900">Heavy oil</option>
+                <option value="1000">Water</option>
+              </select>
+              <input id="topDensity" type="number" min="100" max="14000" step="1" value="800" aria-label="Top fluid density in kilograms per cubic metre" />
+            </div>
+            <div class="label-row">
+              <label for="topDepth">Top depth</label>
+              <span class="live-value" id="topDepthValue">1.0 m</span>
+            </div>
+            <input id="topDepth" type="range" min="0.2" max="3" step="0.1" value="1" />
+          </div>
+        </section>
+
+        <section class="control-group">
+          <h2 class="group-title">Measurement</h2>
+          <div class="label-row">
+            <label for="sensorDepth">Sensor depth</label>
+            <span class="live-value" id="sensorDepthValue">1.5 m</span>
+          </div>
+          <input id="sensorDepth" type="range" min="0" max="3" step="0.05" value="1.5" />
+
+          <label>Pressure reference</label>
+          <div class="segmented" role="group" aria-label="Pressure reference">
+            <button type="button" id="gageReference" class="active" aria-pressed="true">Gage</button>
+            <button type="button" id="absoluteReference" aria-pressed="false">Absolute</button>
+          </div>
+
+          <div id="atmosphereControl" hidden>
+            <label for="atmosphericPressure">Atmospheric pressure (kPa)</label>
+            <input id="atmosphericPressure" type="number" min="50" max="120" step="0.1" value="101.3" />
+          </div>
+        </section>
+
+        <section class="control-group">
+          <button type="button" id="newChallenge" class="secondary-button">New challenge</button>
+        </section>
+      </aside>
+
+      <section class="experiment" aria-label="Pressure experiment">
+        <div class="reading-bar">
+          <div class="reading"><span>Sensor depth</span><strong id="depthReading">1.50 m</strong></div>
+          <div class="reading"><span id="pressureReadingLabel">Gage pressure</span><strong id="pressureReading">14.7 kPa</strong></div>
+          <div class="reading"><span>Sensor location</span><strong id="layerReading">Water</strong></div>
+        </div>
+
+        <div class="visual-grid">
+          <div class="visual-card tank-card">
+            <h2 class="visual-title">Fluid column</h2>
+            <svg id="tankSvg" viewBox="0 0 520 500" role="img" aria-labelledby="tankTitle tankDescription">
+              <title id="tankTitle">Pressure sensor in a fluid column</title>
+              <desc id="tankDescription">A movable pressure sensor is shown at the selected depth in one or two fluid layers.</desc>
+              <defs>
+                <linearGradient id="waterGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0" stop-color="#77c7f2" stop-opacity=".82" />
+                  <stop offset="1" stop-color="#2384cf" stop-opacity=".92" />
+                </linearGradient>
+                <linearGradient id="oilGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0" stop-color="#ffe7a0" stop-opacity=".88" />
+                  <stop offset="1" stop-color="#e8b94d" stop-opacity=".94" />
+                </linearGradient>
+              </defs>
+              <rect x="106" y="54" width="282" height="402" rx="6" fill="#f8fbff" stroke="#334155" stroke-width="4" />
+              <rect id="bottomLayerRect" x="110" y="58" width="274" height="394" fill="url(#waterGradient)" />
+              <rect id="topLayerRect" x="110" y="58" width="274" height="0" fill="url(#oilGradient)" />
+              <line id="interfaceLine" x1="110" x2="384" y1="58" y2="58" stroke="#715817" stroke-width="2" opacity="0" />
+              <g id="ruler"></g>
+              <text id="topLayerLabel" x="247" y="100" text-anchor="middle" fill="#5c4611" font-size="17" font-weight="700"></text>
+              <text id="bottomLayerLabel" x="247" y="270" text-anchor="middle" fill="#083b66" font-size="17" font-weight="700">Water Â· 1000 kg/mÂ³</text>
+              <g id="sensorGroup">
+                <line id="sensorLine" x1="110" x2="414" y1="255" y2="255" stroke="#dc2626" stroke-width="2" stroke-dasharray="7 5" />
+                <circle id="sensorProbe" cx="247" cy="255" r="12" fill="#dc2626" stroke="#fff" stroke-width="4" />
+                <rect id="sensorTarget" x="226" y="234" width="42" height="42" fill="transparent" />
+                <rect id="sensorTag" x="398" y="236" width="96" height="38" rx="8" fill="#172b4d" />
+                <text id="sensorTagText" x="446" y="260" text-anchor="middle" fill="#fff" font-size="16" font-weight="700">1.50 m</text>
+              </g>
+              <text x="247" y="43" text-anchor="middle" fill="#53657c" font-size="15">Free surface</text>
+            </svg>
+          </div>
+
+          <div class="visual-card graph-card">
+            <h2 class="visual-title">Pressure profile</h2>
+            <svg id="pressureGraph" viewBox="0 0 390 500" role="img" aria-labelledby="graphTitle graphDescription">
+              <title id="graphTitle">Pressure versus depth</title>
+              <desc id="graphDescription">The pressure curve changes slope when fluid density changes.</desc>
+              <rect x="66" y="58" width="286" height="382" fill="#fff" />
+              <g id="graphGrid"></g>
+              <rect x="66" y="58" width="286" height="382" fill="none" stroke="#111827" stroke-width="1.4" />
+              <path id="pressurePath" fill="none" stroke="#0072bd" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+              <line id="graphSensorGuide" x1="66" x2="352" y1="249" y2="249" stroke="#d95319" stroke-width="1.5" stroke-dasharray="6 4" />
+              <circle id="graphSensorPoint" cx="210" cy="249" r="6" fill="#d95319" stroke="#fff" stroke-width="2" />
+              <g id="graphDataTip" aria-label="Selected pressure value">
+                <rect id="graphDataTipBox" x="218" y="193" width="118" height="44" rx="2" fill="#fff" stroke="#64748b" stroke-width=".8" />
+                <text id="graphDataTipPressure" x="226" y="210" fill="#111827" font-size="12">p = 14.71 kPa</text>
+                <text id="graphDataTipDepth" x="226" y="227" fill="#111827" font-size="12">h = 1.50 m</text>
+              </g>
+              <g aria-label="Plot legend">
+                <rect x="211" y="72" width="126" height="54" rx="2" fill="#fff" fill-opacity=".94" stroke="#111827" stroke-width=".8" />
+                <line x1="222" x2="252" y1="89" y2="89" stroke="#0072bd" stroke-width="3" />
+                <text x="260" y="94" fill="#111827" font-size="13">profile</text>
+                <line x1="222" x2="252" y1="111" y2="111" stroke="#d95319" stroke-width="1.5" stroke-dasharray="5 3" />
+                <circle cx="237" cy="111" r="4" fill="#d95319" />
+                <text x="260" y="116" fill="#111827" font-size="13">sensor</text>
+              </g>
+              <text x="209" y="482" text-anchor="middle" fill="#41536b" font-size="15">Pressure (kPa)</text>
+              <text x="18" y="249" text-anchor="middle" fill="#41536b" font-size="15" transform="rotate(-90 18 249)">Depth (m)</text>
+              <text id="graphChallengeNotice" x="66" y="47" fill="#b45309" font-size="13" font-weight="700"></text>
+              <text id="graphReferenceLabel" x="346" y="47" text-anchor="end" fill="#5d6b7d" font-size="14">Gage</text>
+            </svg>
+          </div>
+        </div>
+
+        <section class="result-panel" aria-live="polite">
+          <div id="exploreResult" class="result-row">
+            <div>
+              <p class="result-label">Calculation</p>
+              <p class="equation" id="equationText"></p>
+            </div>
+          </div>
+
+          <div id="challengeResult" hidden>
+            <div class="challenge-form">
+              <label for="prediction">Your prediction (kPa)
+                <input id="prediction" type="number" step="0.1" inputmode="decimal" />
+              </label>
+              <button type="button" id="checkPrediction" class="primary-button">Check</button>
+              <button type="button" id="revealAnswer" class="secondary-button" disabled>Show answer</button>
+            </div>
+            <p class="challenge-feedback" id="challengeFeedback">Predict the pressure at the sensor.</p>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <section class="coach-card" aria-labelledby="coachTitle">
+      <div class="coach-header">
+        <div class="coach-title" id="coachTitle"><span class="coach-icon">AI</span> AI Coach</div>
+        <span class="coach-status" id="coachStatus">Checking serverâ€¦</span>
+      </div>
+      <div class="coach-log" id="coachLog" aria-live="polite"></div>
+      <div class="coach-chips" aria-label="Suggested questions">
+        <button type="button" data-question="Give me a hint without revealing the answer.">Give me a hint</button>
+        <button type="button" data-question="Why do I add pressure contributions from each fluid layer?">Explain the layers</button>
+        <button type="button" data-question="Explain the difference between gage and absolute pressure.">Gage vs absolute</button>
+        <button type="button" data-question="What does the slope of the pressure graph mean?">Explain the graph</button>
+      </div>
+      <form class="coach-form" id="coachForm">
+        <textarea id="coachQuestion" maxlength="800" placeholder="Ask about the current pressure columnâ€¦" aria-label="Question for the AI Coach"></textarea>
+        <button type="submit" id="coachSend">Ask</button>
+      </form>
+    </section>
+  </div>
+
+  <script>
+    const G = 9.81;
+    const fluidNames = new Map([
+      [800,"Light oil"], [900,"Heavy oil"], [1000,"Water"],
+      [1025,"Seawater"], [1260,"Glycerin"], [13600,"Mercury"],
+    ]);
+
+    const state = {
+      mode:"explore",
+      reference:"gage",
+      topEnabled:false,
+      bottomDensity:1000,
+      topDensity:800,
+      bottomDepth:3,
+      topDepth:1,
+      sensorDepth:1.5,
+      atmosphericPressure:101.3,
+      attempts:0,
+      hintsUsed:0,
+      revealed:false,
+      lastPrediction:null,
+      lastError:null,
+    };
+
+    const $ = (id) => document.getElementById(id);
+    const elements = {
+      exploreMode:$("exploreMode"), challengeMode:$("challengeMode"),
+      bottomFluid:$("bottomFluid"), bottomDensity:$("bottomDensity"), bottomDepth:$("bottomDepth"),
+      topEnabled:$("topEnabled"), topControls:$("topControls"), topFluid:$("topFluid"), topDensity:$("topDensity"), topDepth:$("topDepth"),
+      bottomDepthValue:$("bottomDepthValue"), topDepthValue:$("topDepthValue"),
+      sensorDepth:$("sensorDepth"), sensorDepthValue:$("sensorDepthValue"),
+      gageReference:$("gageReference"), absoluteReference:$("absoluteReference"), atmosphereControl:$("atmosphereControl"), atmosphericPressure:$("atmosphericPressure"),
+      newChallenge:$("newChallenge"), depthReading:$("depthReading"), pressureReadingLabel:$("pressureReadingLabel"), pressureReading:$("pressureReading"), layerReading:$("layerReading"),
+      bottomLayerRect:$("bottomLayerRect"), topLayerRect:$("topLayerRect"), interfaceLine:$("interfaceLine"), ruler:$("ruler"),
+      topLayerLabel:$("topLayerLabel"), bottomLayerLabel:$("bottomLayerLabel"), sensorLine:$("sensorLine"), sensorProbe:$("sensorProbe"), sensorTarget:$("sensorTarget"), sensorTag:$("sensorTag"), sensorTagText:$("sensorTagText"), tankDescription:$("tankDescription"),
+      pressurePath:$("pressurePath"), graphGrid:$("graphGrid"), graphSensorGuide:$("graphSensorGuide"), graphSensorPoint:$("graphSensorPoint"), graphReferenceLabel:$("graphReferenceLabel"), graphChallengeNotice:$("graphChallengeNotice"), graphDescription:$("graphDescription"),
+      graphDataTip:$("graphDataTip"), graphDataTipBox:$("graphDataTipBox"), graphDataTipPressure:$("graphDataTipPressure"), graphDataTipDepth:$("graphDataTipDepth"),
+      exploreResult:$("exploreResult"), challengeResult:$("challengeResult"), equationText:$("equationText"), prediction:$("prediction"), checkPrediction:$("checkPrediction"), revealAnswer:$("revealAnswer"), challengeFeedback:$("challengeFeedback"),
+      coachForm:$("coachForm"), coachQuestion:$("coachQuestion"), coachSend:$("coachSend"), coachLog:$("coachLog"), coachStatus:$("coachStatus"),
+    };
+
+    function clamp(value,min,max) { return Math.min(max,Math.max(min,value)); }
+    function totalDepth() { return state.bottomDepth + (state.topEnabled ? state.topDepth : 0); }
+    function fluidName(density,fallback) { return fluidNames.get(Number(density)) || fallback; }
+    function topName() { return fluidName(state.topDensity,"Top fluid"); }
+    function bottomName() { return fluidName(state.bottomDensity,"Bottom fluid"); }
+    function sensorLayer() {
+      if (state.sensorDepth === 0) return "Free surface";
+      return state.topEnabled && state.sensorDepth <= state.topDepth ? topName() : bottomName();
+    }
+    function gagePressureAt(depth) {
+      const safeDepth = clamp(Number(depth),0,totalDepth());
+      if (!state.topEnabled) return state.bottomDensity * G * safeDepth / 1000;
+      const topContribution = state.topDensity * G * Math.min(safeDepth,state.topDepth);
+      const bottomContribution = state.bottomDensity * G * Math.max(0,safeDepth-state.topDepth);
+      return (topContribution + bottomContribution) / 1000;
+    }
+    function displayedPressureAt(depth) {
+      const gage = gagePressureAt(depth);
+      return state.reference === "absolute" ? gage + state.atmosphericPressure : gage;
+    }
+    function expectedPressure() { return displayedPressureAt(state.sensorDepth); }
+    function round(value,digits=2) { return Number(value).toFixed(digits); }
+
+    function resetAttempt() {
+      state.attempts = 0;
+      state.revealed = false;
+      state.lastPrediction = null;
+      state.lastError = null;
+      elements.prediction.value = "";
+      elements.revealAnswer.disabled = true;
+      elements.challengeFeedback.className = "challenge-feedback";
+      elements.challengeFeedback.textContent = "Predict the pressure at the sensor.";
+    }
+
+    function syncStateFromControls() {
+      state.bottomDensity = clamp(Number(elements.bottomDensity.value) || 1000,100,14000);
+      state.topDensity = clamp(Number(elements.topDensity.value) || 800,100,14000);
+      state.bottomDepth = Number(elements.bottomDepth.value);
+      state.topDepth = Number(elements.topDepth.value);
+      state.topEnabled = elements.topEnabled.checked;
+      state.atmosphericPressure = clamp(Number(elements.atmosphericPressure.value) || 101.3,50,120);
+      const maxDepth = totalDepth();
+      elements.sensorDepth.max = String(maxDepth);
+      state.sensorDepth = clamp(Number(elements.sensorDepth.value),0,maxDepth);
+      elements.sensorDepth.value = String(state.sensorDepth);
+    }
+
+    function setMode(mode) {
+      state.mode = mode;
+      const explore = mode === "explore";
+      elements.exploreMode.classList.toggle("active",explore);
+      elements.challengeMode.classList.toggle("active",!explore);
+      elements.exploreMode.setAttribute("aria-pressed",String(explore));
+      elements.challengeMode.setAttribute("aria-pressed",String(!explore));
+      elements.exploreResult.hidden = !explore;
+      elements.challengeResult.hidden = explore;
+      resetAttempt();
+      render();
+      logEvent("mode_changed",{mode});
+    }
+
+    function setReference(reference) {
+      state.reference = reference;
+      const gage = reference === "gage";
+      elements.gageReference.classList.toggle("active",gage);
+      elements.absoluteReference.classList.toggle("active",!gage);
+      elements.gageReference.setAttribute("aria-pressed",String(gage));
+      elements.absoluteReference.setAttribute("aria-pressed",String(!gage));
+      elements.atmosphereControl.hidden = gage;
+      resetAttempt();
+      render();
+      logEvent("reference_changed",{reference});
+    }
+
+    function updateFluidSelect(select,density) {
+      const option = [...select.options].find(item => Number(item.value) === Number(density));
+      select.value = option ? option.value : "";
+    }
+
+    function updateEquation() {
+      const depth = state.sensorDepth;
+      const gage = gagePressureAt(depth);
+      let parts;
+      if (state.topEnabled && depth > state.topDepth) {
+        const lowerDepth = depth-state.topDepth;
+        parts = `p<sub>g</sub> = (${state.topDensity}Ã—${G}Ã—${round(state.topDepth,2)} + ${state.bottomDensity}Ã—${G}Ã—${round(lowerDepth,2)})/1000 = ${round(gage)} kPa`;
+      } else {
+        const density = state.topEnabled ? state.topDensity : state.bottomDensity;
+        parts = `p<sub>g</sub> = Ïgh = ${density}Ã—${G}Ã—${round(depth,2)}/1000 = ${round(gage)} kPa`;
+      }
+      if (state.reference === "absolute") {
+        parts += `; &nbsp;p<sub>abs</sub> = p<sub>atm</sub> + p<sub>g</sub> = ${round(expectedPressure())} kPa`;
+      }
+      elements.equationText.innerHTML = parts;
+    }
+
+    function renderTank() {
+      const topY = 58;
+      const height = 394;
+      const depth = totalDepth();
+      const topHeight = state.topEnabled ? height * state.topDepth/depth : 0;
+      const interfaceY = topY + topHeight;
+      const sensorY = topY + height*state.sensorDepth/depth;
+
+      elements.topLayerRect.setAttribute("height",topHeight.toFixed(2));
+      elements.bottomLayerRect.setAttribute("y",interfaceY.toFixed(2));
+      elements.bottomLayerRect.setAttribute("height",(height-topHeight).toFixed(2));
+      elements.interfaceLine.setAttribute("y1",interfaceY.toFixed(2));
+      elements.interfaceLine.setAttribute("y2",interfaceY.toFixed(2));
+      elements.interfaceLine.setAttribute("opacity",state.topEnabled ? "1" : "0");
+
+      let topLabelY = topY + Math.max(24,topHeight/2);
+      let bottomLabelY = interfaceY + Math.max(24,(height-topHeight)/2);
+      if (Math.abs(topLabelY-sensorY)<28) topLabelY=clamp(topLabelY-34,topY+20,Math.max(topY+20,interfaceY-14));
+      if (Math.abs(bottomLabelY-sensorY)<28) bottomLabelY=clamp(bottomLabelY+34,interfaceY+20,topY+height-18);
+      elements.topLayerLabel.setAttribute("y",topLabelY.toFixed(1));
+      elements.topLayerLabel.textContent = state.topEnabled && topHeight > 45 ? `${topName()} Â· ${state.topDensity} kg/mÂ³` : "";
+      elements.bottomLayerLabel.setAttribute("y",bottomLabelY.toFixed(1));
+      elements.bottomLayerLabel.textContent = `${bottomName()} Â· ${state.bottomDensity} kg/mÂ³`;
+
+      [elements.sensorLine,elements.sensorProbe,elements.sensorTarget,elements.sensorTag,elements.sensorTagText].forEach(element => {
+        if ([elements.sensorLine].includes(element)) {
+          element.setAttribute("y1",sensorY.toFixed(2)); element.setAttribute("y2",sensorY.toFixed(2));
+        } else if (element === elements.sensorProbe) {
+          element.setAttribute("cy",sensorY.toFixed(2));
+        } else if (element === elements.sensorTarget) {
+          element.setAttribute("y",(sensorY-21).toFixed(2));
+        } else if (element === elements.sensorTag) {
+          element.setAttribute("y",(sensorY-19).toFixed(2));
+        } else {
+          element.setAttribute("y",(sensorY+5).toFixed(2));
+        }
+      });
+      elements.sensorTagText.textContent = `${round(state.sensorDepth,2)} m`;
+
+      elements.ruler.replaceChildren();
+      const tickStep = depth <= 3 ? .5 : 1;
+      for (let value=0; value<=depth+.001; value+=tickStep) {
+        const y = topY + height*value/depth;
+        const line = document.createElementNS("http://www.w3.org/2000/svg","line");
+        line.setAttribute("x1","75"); line.setAttribute("x2","105"); line.setAttribute("y1",y); line.setAttribute("y2",y);
+        line.setAttribute("stroke","#64748b"); line.setAttribute("stroke-width","1");
+        const text = document.createElementNS("http://www.w3.org/2000/svg","text");
+        text.setAttribute("x","68"); text.setAttribute("y",y+4); text.setAttribute("text-anchor","end"); text.setAttribute("fill","#64748b"); text.setAttribute("font-size","13");
+        text.textContent = `${round(value,1)} m`;
+        elements.ruler.append(line,text);
+      }
+      if (Math.abs((Math.floor(depth/tickStep)*tickStep)-depth)>.02) {
+        const y = topY+height;
+        const text = document.createElementNS("http://www.w3.org/2000/svg","text");
+        text.setAttribute("x","68"); text.setAttribute("y",y+4); text.setAttribute("text-anchor","end"); text.setAttribute("fill","#64748b"); text.setAttribute("font-size","13");
+        text.textContent = `${round(depth,1)} m`;
+        elements.ruler.append(text);
+      }
+      elements.tankDescription.textContent = `The sensor is ${round(state.sensorDepth,2)} metres below the free surface in ${sensorLayer()}.`;
+    }
+
+    function renderGraph() {
+      const x0=66, x1=352, y0=58, y1=440;
+      const depth=totalDepth();
+      const surfacePressure=displayedPressureAt(0);
+      const bottomPressure=displayedPressureAt(depth);
+      const pressureSpan=Math.max(bottomPressure-surfacePressure,2);
+
+      function niceStep(rawStep) {
+        const power=10**Math.floor(Math.log10(Math.max(rawStep,1e-9)));
+        const normalized=rawStep/power;
+        const factor=normalized<=1?1:normalized<=2?2:normalized<=5?5:10;
+        return factor*power;
+      }
+      function tickLabel(value,step) {
+        const digits=step<.1?2:step<1?1:0;
+        return Number(value).toFixed(digits);
+      }
+      function svgElement(tag,attributes,textContent="") {
+        const element=document.createElementNS("http://www.w3.org/2000/svg",tag);
+        Object.entries(attributes).forEach(([key,value])=>element.setAttribute(key,String(value)));
+        if (textContent) element.textContent=textContent;
+        return element;
+      }
+
+      const xStep=niceStep(pressureSpan/5);
+      const leftPadding=state.reference==="absolute" ? pressureSpan*.06 : 0;
+      let xMin=Math.floor((surfacePressure-leftPadding)/xStep)*xStep;
+      if (state.reference==="gage") xMin=0;
+      xMin=Math.max(0,xMin);
+      let xMax=Math.ceil((bottomPressure+pressureSpan*.10)/xStep)*xStep;
+      if (xMax<=xMin) xMax=xMin+xStep*5;
+
+      const x=(pressure)=>x0+(pressure-xMin)/(xMax-xMin)*(x1-x0);
+      const y=(value)=>y0+value/depth*(y1-y0);
+      const samples=[];
+      for (let i=0;i<=100;i++) {
+        const d=depth*i/100;
+        samples.push(`${i===0?"M":"L"}${x(displayedPressureAt(d)).toFixed(2)},${y(d).toFixed(2)}`);
+      }
+      elements.pressurePath.setAttribute("d",samples.join(" "));
+
+      const sensorPressure=displayedPressureAt(state.sensorDepth);
+      const sensorX=x(sensorPressure);
+      const sensorY=y(state.sensorDepth);
+      elements.graphSensorGuide.setAttribute("y1",sensorY);
+      elements.graphSensorGuide.setAttribute("y2",sensorY);
+      elements.graphSensorPoint.setAttribute("cx",sensorX);
+      elements.graphSensorPoint.setAttribute("cy",sensorY);
+      elements.graphReferenceLabel.textContent=state.reference==="absolute"?"Absolute pressure":"Gage pressure";
+      const hidePressureValues=state.mode==="challenge"&&!state.revealed;
+      elements.graphDataTip.style.display=hidePressureValues?"none":"inline";
+      elements.graphDataTip.setAttribute("aria-hidden",String(hidePressureValues));
+      elements.graphChallengeNotice.textContent=hidePressureValues?"Pressure values hidden":"";
+
+      const tipWidth=118, tipHeight=44;
+      const tipX=clamp(sensorX+12,x0+6,x1-tipWidth-6);
+      const preferredTipY=sensorY>y0+tipHeight+20?sensorY-tipHeight-12:sensorY+12;
+      const tipY=clamp(preferredTipY,y0+6,y1-tipHeight-6);
+      elements.graphDataTipBox.setAttribute("x",tipX);
+      elements.graphDataTipBox.setAttribute("y",tipY);
+      elements.graphDataTipPressure.setAttribute("x",tipX+8);
+      elements.graphDataTipPressure.setAttribute("y",tipY+17);
+      elements.graphDataTipDepth.setAttribute("x",tipX+8);
+      elements.graphDataTipDepth.setAttribute("y",tipY+34);
+      elements.graphDataTipPressure.textContent=`p = ${round(sensorPressure)} kPa`;
+      elements.graphDataTipDepth.textContent=`h = ${round(state.sensorDepth,2)} m`;
+
+      elements.graphGrid.replaceChildren();
+      for (let pressure=xMin;pressure<=xMax+xStep*.01;pressure+=xStep) {
+        const gx=x(pressure);
+        const grid=svgElement("line",{x1:gx,x2:gx,y1:y0,y2:y1,stroke:"#d7dce2","stroke-width":1});
+        const tick=svgElement("line",{x1:gx,x2:gx,y1:y1,y2:y1+5,stroke:"#111827","stroke-width":1});
+        const label=svgElement("text",{x:gx,y:458,"text-anchor":"middle",fill:"#111827","font-size":13},hidePressureValues?"":tickLabel(pressure,xStep));
+        elements.graphGrid.append(grid,tick,label);
+      }
+
+      const yStep=niceStep(depth/5);
+      const yTicks=[];
+      for (let value=0;value<=depth+yStep*.01;value+=yStep) yTicks.push(value);
+      if (Math.abs(yTicks.at(-1)-depth)>yStep*.05) yTicks.push(depth);
+      yTicks.forEach(value=>{
+        const gy=y(value);
+        const grid=svgElement("line",{x1:x0,x2:x1,y1:gy,y2:gy,stroke:"#d7dce2","stroke-width":1});
+        const tick=svgElement("line",{x1:x0-5,x2:x0,y1:gy,y2:gy,stroke:"#111827","stroke-width":1});
+        const label=svgElement("text",{x:x0-9,y:gy+4,"text-anchor":"end",fill:"#111827","font-size":13},tickLabel(value,yStep));
+        elements.graphGrid.append(grid,tick,label);
+      });
+
+      if (state.topEnabled) {
+        const interfaceY=y(state.topDepth);
+        const interfaceLine=svgElement("line",{x1:x0,x2:x1,y1:interfaceY,y2:interfaceY,stroke:"#7f7f7f","stroke-width":1.2,"stroke-dasharray":"4 3"});
+        const interfaceLabel=svgElement("text",{x:x1-5,y:interfaceY-6,"text-anchor":"end",fill:"#4b5563","font-size":12},"fluid interface");
+        elements.graphGrid.append(interfaceLine,interfaceLabel);
+      }
+
+      elements.graphDescription.textContent=hidePressureValues
+        ? "The pressure curve rises with depth; numerical pressure values are hidden in Challenge mode."
+        : `MATLAB-style plot of ${state.reference} pressure versus depth, from ${round(surfacePressure)} to ${round(bottomPressure)} kilopascals over ${round(depth,1)} metres.`;
+    }
+
+    function render() {
+      syncStateFromControls();
+      elements.exploreResult.hidden = state.mode === "challenge" && !state.revealed;
+      elements.topControls.hidden = !state.topEnabled;
+      elements.bottomDepthValue.textContent = `${round(state.bottomDepth,1)} m`;
+      elements.topDepthValue.textContent = `${round(state.topDepth,1)} m`;
+      elements.sensorDepthValue.textContent = `${round(state.sensorDepth,2)} m`;
+      elements.depthReading.textContent = `${round(state.sensorDepth,2)} m`;
+      elements.layerReading.textContent = sensorLayer();
+      elements.pressureReadingLabel.textContent = `${state.reference === "absolute" ? "Absolute" : "Gage"} pressure`;
+      elements.pressureReading.textContent = state.mode === "challenge" && !state.revealed ? "Hidden" : `${round(expectedPressure())} kPa`;
+      updateEquation();
+      renderTank();
+      renderGraph();
+    }
+
+    function handleSettingChange(eventName="setting_changed") {
+      syncStateFromControls();
+      resetAttempt();
+      render();
+      logEvent(eventName,coachContext());
+    }
+
+    function checkPrediction() {
+      const prediction=Number(elements.prediction.value);
+      if (!Number.isFinite(prediction)) {
+        elements.challengeFeedback.className="challenge-feedback bad";
+        elements.challengeFeedback.textContent="Enter a pressure in kPa.";
+        return;
+      }
+      const expected=expectedPressure();
+      const error=prediction-expected;
+      const tolerance=Math.max(.25,Math.abs(expected)*.015);
+      state.attempts+=1;
+      state.lastPrediction=prediction;
+      state.lastError=error;
+      elements.revealAnswer.disabled=false;
+
+      if (Math.abs(error)<=tolerance) {
+        state.revealed=true;
+        elements.challengeFeedback.className="challenge-feedback good";
+        elements.challengeFeedback.textContent=`Correct â€” ${round(expected)} kPa.`;
+      } else {
+        elements.challengeFeedback.className="challenge-feedback warn";
+        const gage=gagePressureAt(state.sensorDepth);
+        if (state.reference==="absolute" && Math.abs(prediction-gage)<=Math.max(.6,gage*.04)) {
+          elements.challengeFeedback.textContent="That looks like gage pressure. Absolute pressure also includes atmospheric pressure.";
+        } else if (Math.abs(prediction-expected*1000)<=Math.max(10,expected*20)) {
+          elements.challengeFeedback.textContent="Check the unit conversion: 1000 Pa = 1 kPa.";
+        } else if (state.topEnabled && state.sensorDepth>state.topDepth) {
+          elements.challengeFeedback.textContent=`${error>0?"Too high":"Too low"}. Treat the two fluid depths separately and add their pressure contributions.`;
+        } else {
+          elements.challengeFeedback.textContent=`${error>0?"Too high":"Too low"}. Check Ï, g, depth, and the selected pressure reference.`;
+        }
+      }
+      render();
+      logEvent("prediction_checked",{prediction,expected,error,attempt:state.attempts});
+    }
+
+    function revealAnswer() {
+      state.revealed=true;
+      state.hintsUsed+=1;
+      elements.challengeFeedback.className="challenge-feedback";
+      elements.challengeFeedback.textContent=`Answer: ${round(expectedPressure())} kPa. Review the calculation shown above.`;
+      render();
+      logEvent("answer_revealed",{attempts:state.attempts});
+    }
+
+    function randomChoice(values) { return values[Math.floor(Math.random()*values.length)]; }
+    function newChallenge() {
+      setMode("challenge");
+      state.hintsUsed=0;
+      const bottom=randomChoice([1000,1025,1260]);
+      const layered=Math.random()<.65;
+      const top=randomChoice([800,900]);
+      elements.bottomDensity.value=bottom;
+      updateFluidSelect(elements.bottomFluid,bottom);
+      elements.topEnabled.checked=layered;
+      elements.topDensity.value=top;
+      updateFluidSelect(elements.topFluid,top);
+      elements.bottomDepth.value=(1+Math.random()*3).toFixed(1);
+      elements.topDepth.value=(.5+Math.random()*1.5).toFixed(1);
+      syncStateFromControls();
+      elements.sensorDepth.value=(.35+Math.random()*(totalDepth()-.45)).toFixed(2);
+      setReference(Math.random()<.72?"gage":"absolute");
+      resetAttempt();
+      render();
+      logEvent("challenge_started",coachContext());
+    }
+
+    const eventLog=[];
+    function logEvent(type,data={}) {
+      eventLog.push({type,time:Date.now(),data});
+      if (eventLog.length>100) eventLog.shift();
+    }
+
+    elements.exploreMode.addEventListener("click",()=>setMode("explore"));
+    elements.challengeMode.addEventListener("click",()=>setMode("challenge"));
+    elements.gageReference.addEventListener("click",()=>setReference("gage"));
+    elements.absoluteReference.addEventListener("click",()=>setReference("absolute"));
+    elements.newChallenge.addEventListener("click",newChallenge);
+    elements.checkPrediction.addEventListener("click",checkPrediction);
+    elements.revealAnswer.addEventListener("click",revealAnswer);
+    elements.prediction.addEventListener("keydown",event=>{ if(event.key==="Enter") checkPrediction(); });
+
+    elements.bottomFluid.addEventListener("change",()=>{ elements.bottomDensity.value=elements.bottomFluid.value; handleSettingChange("bottom_fluid_changed"); });
+    elements.topFluid.addEventListener("change",()=>{ elements.topDensity.value=elements.topFluid.value; handleSettingChange("top_fluid_changed"); });
+    elements.bottomDensity.addEventListener("change",()=>{ updateFluidSelect(elements.bottomFluid,elements.bottomDensity.value); handleSettingChange("bottom_density_changed"); });
+    elements.topDensity.addEventListener("change",()=>{ updateFluidSelect(elements.topFluid,elements.topDensity.value); handleSettingChange("top_density_changed"); });
+    elements.topEnabled.addEventListener("change",()=>handleSettingChange("layer_toggled"));
+    elements.bottomDepth.addEventListener("input",()=>handleSettingChange("bottom_depth_changed"));
+    elements.topDepth.addEventListener("input",()=>handleSettingChange("top_depth_changed"));
+    elements.sensorDepth.addEventListener("input",()=>handleSettingChange("sensor_moved"));
+    elements.atmosphericPressure.addEventListener("change",()=>handleSettingChange("atmosphere_changed"));
+
+    let draggingSensor=false;
+    function sensorDepthFromPointer(event) {
+      const rect=$("tankSvg").getBoundingClientRect();
+      const svgY=(event.clientY-rect.top)/rect.height*500;
+      return clamp((svgY-58)/394*totalDepth(),0,totalDepth());
+    }
+    elements.sensorTarget.addEventListener("pointerdown",event=>{
+      draggingSensor=true;
+      elements.sensorTarget.setPointerCapture(event.pointerId);
+    });
+    elements.sensorTarget.addEventListener("pointermove",event=>{
+      if (!draggingSensor) return;
+      elements.sensorDepth.value=sensorDepthFromPointer(event).toFixed(2);
+      handleSettingChange("sensor_dragged");
+    });
+    elements.sensorTarget.addEventListener("pointerup",()=>{ draggingSensor=false; });
+    elements.sensorTarget.addEventListener("pointercancel",()=>{ draggingSensor=false; });
+
+    const coachHistory=[];
+    function coachContext() {
+      const depth=state.sensorDepth;
+      const topSubmerged=state.topEnabled?Math.min(depth,state.topDepth):0;
+      const bottomSubmerged=state.topEnabled?Math.max(0,depth-state.topDepth):depth;
+      return {
+        activity:"pressure-column",
+        mode:state.mode,
+        pressureReference:state.reference,
+        atmosphericPressure:state.atmosphericPressure,
+        topLayerEnabled:state.topEnabled,
+        topFluid:state.topEnabled?topName():null,
+        topDensity:state.topEnabled?state.topDensity:null,
+        topLayerDepth:state.topEnabled?state.topDepth:null,
+        bottomFluid:bottomName(),
+        bottomDensity:state.bottomDensity,
+        bottomLayerDepth:state.bottomDepth,
+        sensorDepth:depth,
+        sensorLayer:sensorLayer(),
+        topDepthAboveSensor:topSubmerged,
+        bottomDepthAboveSensor:bottomSubmerged,
+        gagePressure:Number(gagePressureAt(depth).toFixed(3)),
+        expectedPressure:Number(expectedPressure().toFixed(3)),
+        prediction:state.lastPrediction,
+        predictionError:state.lastError==null?null:Number(state.lastError.toFixed(3)),
+        attempts:state.attempts,
+        hintsUsed:state.hintsUsed,
+        answerRevealed:state.revealed,
+      };
+    }
+
+    function getCoachSessionId() {
+      const key="ce2134CoachSessionId";
+      try {
+        let id=localStorage.getItem(key);
+        if (!id) {
+          id=`session-${crypto.randomUUID?crypto.randomUUID():Date.now()}`;
+          localStorage.setItem(key,id);
+        }
+        return id;
+      } catch { return `session-${Date.now()}`; }
+    }
+
+    function addCoachMessage(role,text,extraClass="") {
+      const message=document.createElement("div");
+      message.className=`coach-message ${role} ${extraClass}`.trim();
+      message.textContent=`${role==="user"?"You":"Coach"}: ${text}`;
+      elements.coachLog.appendChild(message);
+      elements.coachLog.scrollTop=elements.coachLog.scrollHeight;
+      return message;
+    }
+
+    function builtInCoachReply(question) {
+      const q=question.toLowerCase();
+      const c=coachContext();
+      if (q.includes("hint")) {
+        if (c.topLayerEnabled && c.sensorDepth>c.topLayerDepth) {
+          return `Split the column at the interface. Calculate Ïgh for ${round(c.topDepthAboveSensor,2)} m of ${c.topFluid}, then for ${round(c.bottomDepthAboveSensor,2)} m of ${c.bottomFluid}, and add them.${c.pressureReference==="absolute"?" Add atmospheric pressure last.":""}`;
+        }
+        return `Use the density of ${c.sensorLayer} and the vertical depth ${round(c.sensorDepth,2)} m in p = Ïgh.${c.pressureReference==="absolute"?" Then add atmospheric pressure.":" Convert Pa to kPa by dividing by 1000."}`;
+      }
+      if (q.includes("gage") || q.includes("absolute") || q.includes("atmos")) {
+        return `Gage pressure is measured relative to local atmospheric pressure. Absolute pressure is measured relative to a perfect vacuum: p_abs = p_atm + p_g. At the open free surface, gage pressure is 0 kPa while absolute pressure is ${round(c.atmosphericPressure,1)} kPa.`;
+      }
+      if (q.includes("slope") || q.includes("graph")) {
+        return `The pressure-depth slope is dp/dh = Ïg. A denser fluid makes the graph steeper. With two layers, the change in slope marks the fluid interface; pressure itself remains continuous there.`;
+      }
+      if (q.includes("layer") || q.includes("add")) {
+        return `Each layer adds the weight per unit area of fluid above the sensor. For two layers, p_g = Ïâ‚ghâ‚ + Ïâ‚‚ghâ‚‚. Use each density only with its own vertical depth.`;
+      }
+      if (q.includes("unit") || q.includes("kpa") || q.includes("pa")) {
+        return `Using density in kg/mÂ³, g in m/sÂ², and depth in m gives pressure in pascals. Divide by 1000 to report kilopascals.`;
+      }
+      if (state.mode==="challenge" && !state.revealed) {
+        return `Start with the fluid directly below the free surface and account for every layer above the sensor. I will keep the numerical answer hidden while the challenge is active.`;
+      }
+      return `At ${round(c.sensorDepth,2)} m, the gage pressure is ${round(c.gagePressure)} kPa. ${c.pressureReference==="absolute"?`Adding ${round(c.atmosphericPressure,1)} kPa gives ${round(c.expectedPressure)} kPa absolute.`:"Pressure rises with depth because more fluid weight is supported above the sensor."}`;
+    }
+
+    async function askCoach(question) {
+      question=String(question||"").trim();
+      if (!question) return;
+      if (question.toLowerCase().includes("hint")) state.hintsUsed+=1;
+      const priorHistory=coachHistory.slice(-8);
+      addCoachMessage("user",question);
+      coachHistory.push({role:"user",content:question});
+      const pending=addCoachMessage("coach","Thinkingâ€¦","pending");
+      elements.coachQuestion.value="";
+      elements.coachSend.disabled=true;
+      logEvent("coach_question",{question});
+      try {
+        const response=await fetch("/api/chat",{
+          method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({question,context:coachContext(),history:priorHistory,sessionId:getCoachSessionId()}),
+        });
+        const data=await response.json().catch(()=>({}));
+        if (!response.ok) throw new Error(data.error||"AI Coach is unavailable.");
+        const reply=data.reply||builtInCoachReply(question);
+        pending.classList.remove("pending");
+        pending.textContent=`Coach: ${reply}`;
+        coachHistory.push({role:"assistant",content:reply});
+        elements.coachStatus.textContent="AI online";
+        elements.coachStatus.classList.add("online");
+      } catch {
+        const reply=builtInCoachReply(question);
+        pending.classList.remove("pending");
+        pending.textContent=`Coach: ${reply}`;
+        coachHistory.push({role:"assistant",content:reply});
+        elements.coachStatus.textContent="Built-in mode";
+        elements.coachStatus.classList.remove("online");
+      } finally {
+        elements.coachSend.disabled=false;
+        elements.coachQuestion.focus();
+      }
+    }
+
+    elements.coachForm.addEventListener("submit",event=>{ event.preventDefault(); askCoach(elements.coachQuestion.value); });
+    elements.coachQuestion.addEventListener("keydown",event=>{ if(event.key==="Enter"&&!event.shiftKey){ event.preventDefault(); elements.coachForm.requestSubmit(); } });
+    document.querySelectorAll(".coach-chips [data-question]").forEach(button=>button.addEventListener("click",()=>askCoach(button.dataset.question)));
+
+    addCoachMessage("coach","Move the sensor or start a challenge. I can respond to the current fluids, depths, pressure reference, and your prediction.");
+    fetch("/api/health")
+      .then(response=>{ if(!response.ok) throw new Error(); return response.json(); })
+      .then(data=>{ elements.coachStatus.textContent=data.aiConfigured?"AI online":"Built-in mode"; elements.coachStatus.classList.toggle("online",Boolean(data.aiConfigured)); })
+      .catch(()=>{ elements.coachStatus.textContent="Built-in mode"; });
+
+    render();
+  </script>
+</body>
+</html>
+
