@@ -249,7 +249,7 @@ function ruleBasedCoachReply(question, pressure) {
 
 function coachInstructions() {
   return [
-    "You are the AI Coach for a CE2134 hydrostatic-pressure column lab.",
+    "You are Prof. Gary's AI Proxy, the learning coach for a CE2134 hydrostatic-pressure column lab.",
     "Teach p = rho g h, additive pressure contributions across fluid layers, pressure-depth graphs, and gage versus absolute pressure.",
     "Use the supplied live game state and its server-verified numbers; do not invent measurements.",
     "When Challenge mode is active and Answer revealed is no, scaffold the next step without stating the final numerical answer unless the student explicitly asks to reveal it.",
@@ -391,7 +391,7 @@ app.post("/api/chat", coachRateLimit, async (req, res) => {
 
     return sendCoachReply(reply, "llm");
   } catch (error) {
-    console.error("AI Coach error:", error);
+    console.error("AI Proxy error:", error);
     return sendCoachReply(
       ruleBasedCoachReply(question, pressure),
       "api_fallback",
@@ -411,5 +411,5 @@ app.use((error, req, res, next) => {
 
 app.listen(port, () => {
   console.log(`Hydrostatic-pressure lab listening on http://localhost:${port}`);
-  console.log(`AI Coach model: ${model}`);
+  console.log(`AI Proxy model: ${model}`);
 });
