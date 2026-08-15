@@ -177,7 +177,7 @@
   <div class="lab">
     <header class="topbar">
       <div>
-        <p class="eyebrow">CE2134 Â· Fluid Mechanics</p>
+        <p class="eyebrow">CE2134 · Fluid Mechanics</p>
         <h1>Hydrostatic Pressure (Week 2)</h1>
       </div>
       <div class="top-actions">
@@ -286,7 +286,7 @@
               <line id="interfaceLine" x1="110" x2="384" y1="58" y2="58" stroke="#715817" stroke-width="2" opacity="0" />
               <g id="ruler"></g>
               <text id="topLayerLabel" x="247" y="100" text-anchor="middle" fill="#5c4611" font-size="17" font-weight="700"></text>
-              <text id="bottomLayerLabel" x="247" y="270" text-anchor="middle" fill="#083b66" font-size="17" font-weight="700">Water Â· 1000 kg/mÂ³</text>
+              <text id="bottomLayerLabel" x="247" y="270" text-anchor="middle" fill="#083b66" font-size="17" font-weight="700">Water · 1000 kg/m³</text>
               <g id="sensorGroup">
                 <line id="sensorLine" x1="110" x2="414" y1="255" y2="255" stroke="#dc2626" stroke-width="2" stroke-dasharray="7 5" />
                 <circle id="sensorProbe" cx="247" cy="255" r="12" fill="#dc2626" stroke="#fff" stroke-width="4" />
@@ -355,7 +355,7 @@
     <section class="coach-card" aria-labelledby="coachTitle">
       <div class="coach-header">
         <div class="coach-title" id="coachTitle"><span class="coach-icon">AI</span> AI Coach</div>
-        <span class="coach-status" id="coachStatus">Checking serverâ€¦</span>
+        <span class="coach-status" id="coachStatus">Checking server…</span>
       </div>
       <div class="coach-log" id="coachLog" aria-live="polite"></div>
       <div class="coach-chips" aria-label="Suggested questions">
@@ -365,7 +365,7 @@
         <button type="button" data-question="What does the slope of the pressure graph mean?">Explain the graph</button>
       </div>
       <form class="coach-form" id="coachForm">
-        <textarea id="coachQuestion" maxlength="800" placeholder="Ask about the current pressure columnâ€¦" aria-label="Question for the AI Coach"></textarea>
+        <textarea id="coachQuestion" maxlength="800" placeholder="Ask about the current pressure column…" aria-label="Question for the AI Coach"></textarea>
         <button type="submit" id="coachSend">Ask</button>
       </form>
     </section>
@@ -497,10 +497,10 @@
       let parts;
       if (state.topEnabled && depth > state.topDepth) {
         const lowerDepth = depth-state.topDepth;
-        parts = `p<sub>g</sub> = (${state.topDensity}Ã—${G}Ã—${round(state.topDepth,2)} + ${state.bottomDensity}Ã—${G}Ã—${round(lowerDepth,2)})/1000 = ${round(gage)} kPa`;
+        parts = `p<sub>g</sub> = (${state.topDensity}×${G}×${round(state.topDepth,2)} + ${state.bottomDensity}×${G}×${round(lowerDepth,2)})/1000 = ${round(gage)} kPa`;
       } else {
         const density = state.topEnabled ? state.topDensity : state.bottomDensity;
-        parts = `p<sub>g</sub> = Ïgh = ${density}Ã—${G}Ã—${round(depth,2)}/1000 = ${round(gage)} kPa`;
+        parts = `p<sub>g</sub> = ρgh = ${density}×${G}×${round(depth,2)}/1000 = ${round(gage)} kPa`;
       }
       if (state.reference === "absolute") {
         parts += `; &nbsp;p<sub>abs</sub> = p<sub>atm</sub> + p<sub>g</sub> = ${round(expectedPressure())} kPa`;
@@ -528,9 +528,9 @@
       if (Math.abs(topLabelY-sensorY)<28) topLabelY=clamp(topLabelY-34,topY+20,Math.max(topY+20,interfaceY-14));
       if (Math.abs(bottomLabelY-sensorY)<28) bottomLabelY=clamp(bottomLabelY+34,interfaceY+20,topY+height-18);
       elements.topLayerLabel.setAttribute("y",topLabelY.toFixed(1));
-      elements.topLayerLabel.textContent = state.topEnabled && topHeight > 45 ? `${topName()} Â· ${state.topDensity} kg/mÂ³` : "";
+      elements.topLayerLabel.textContent = state.topEnabled && topHeight > 45 ? `${topName()} · ${state.topDensity} kg/m³` : "";
       elements.bottomLayerLabel.setAttribute("y",bottomLabelY.toFixed(1));
-      elements.bottomLayerLabel.textContent = `${bottomName()} Â· ${state.bottomDensity} kg/mÂ³`;
+      elements.bottomLayerLabel.textContent = `${bottomName()} · ${state.bottomDensity} kg/m³`;
 
       [elements.sensorLine,elements.sensorProbe,elements.sensorTarget,elements.sensorTag,elements.sensorTagText].forEach(element => {
         if ([elements.sensorLine].includes(element)) {
@@ -710,7 +710,7 @@
       if (Math.abs(error)<=tolerance) {
         state.revealed=true;
         elements.challengeFeedback.className="challenge-feedback good";
-        elements.challengeFeedback.textContent=`Correct â€” ${round(expected)} kPa.`;
+        elements.challengeFeedback.textContent=`Correct — ${round(expected)} kPa.`;
       } else {
         elements.challengeFeedback.className="challenge-feedback warn";
         const gage=gagePressureAt(state.sensorDepth);
@@ -721,7 +721,7 @@
         } else if (state.topEnabled && state.sensorDepth>state.topDepth) {
           elements.challengeFeedback.textContent=`${error>0?"Too high":"Too low"}. Treat the two fluid depths separately and add their pressure contributions.`;
         } else {
-          elements.challengeFeedback.textContent=`${error>0?"Too high":"Too low"}. Check Ï, g, depth, and the selected pressure reference.`;
+          elements.challengeFeedback.textContent=`${error>0?"Too high":"Too low"}. Check ρ, g, depth, and the selected pressure reference.`;
         }
       }
       render();
@@ -859,21 +859,21 @@
       const c=coachContext();
       if (q.includes("hint")) {
         if (c.topLayerEnabled && c.sensorDepth>c.topLayerDepth) {
-          return `Split the column at the interface. Calculate Ïgh for ${round(c.topDepthAboveSensor,2)} m of ${c.topFluid}, then for ${round(c.bottomDepthAboveSensor,2)} m of ${c.bottomFluid}, and add them.${c.pressureReference==="absolute"?" Add atmospheric pressure last.":""}`;
+          return `Split the column at the interface. Calculate ρgh for ${round(c.topDepthAboveSensor,2)} m of ${c.topFluid}, then for ${round(c.bottomDepthAboveSensor,2)} m of ${c.bottomFluid}, and add them.${c.pressureReference==="absolute"?" Add atmospheric pressure last.":""}`;
         }
-        return `Use the density of ${c.sensorLayer} and the vertical depth ${round(c.sensorDepth,2)} m in p = Ïgh.${c.pressureReference==="absolute"?" Then add atmospheric pressure.":" Convert Pa to kPa by dividing by 1000."}`;
+        return `Use the density of ${c.sensorLayer} and the vertical depth ${round(c.sensorDepth,2)} m in p = ρgh.${c.pressureReference==="absolute"?" Then add atmospheric pressure.":" Convert Pa to kPa by dividing by 1000."}`;
       }
       if (q.includes("gage") || q.includes("absolute") || q.includes("atmos")) {
         return `Gage pressure is measured relative to local atmospheric pressure. Absolute pressure is measured relative to a perfect vacuum: p_abs = p_atm + p_g. At the open free surface, gage pressure is 0 kPa while absolute pressure is ${round(c.atmosphericPressure,1)} kPa.`;
       }
       if (q.includes("slope") || q.includes("graph")) {
-        return `The pressure-depth slope is dp/dh = Ïg. A denser fluid makes the graph steeper. With two layers, the change in slope marks the fluid interface; pressure itself remains continuous there.`;
+        return `The pressure-depth slope is dp/dh = ρg. A denser fluid makes the graph steeper. With two layers, the change in slope marks the fluid interface; pressure itself remains continuous there.`;
       }
       if (q.includes("layer") || q.includes("add")) {
-        return `Each layer adds the weight per unit area of fluid above the sensor. For two layers, p_g = Ïâ‚ghâ‚ + Ïâ‚‚ghâ‚‚. Use each density only with its own vertical depth.`;
+        return `Each layer adds the weight per unit area of fluid above the sensor. For two layers, p_g = ρ₁gh₁ + ρ₂gh₂. Use each density only with its own vertical depth.`;
       }
       if (q.includes("unit") || q.includes("kpa") || q.includes("pa")) {
-        return `Using density in kg/mÂ³, g in m/sÂ², and depth in m gives pressure in pascals. Divide by 1000 to report kilopascals.`;
+        return `Using density in kg/m³, g in m/s², and depth in m gives pressure in pascals. Divide by 1000 to report kilopascals.`;
       }
       if (state.mode==="challenge" && !state.revealed) {
         return `Start with the fluid directly below the free surface and account for every layer above the sensor. I will keep the numerical answer hidden while the challenge is active.`;
@@ -888,7 +888,7 @@
       const priorHistory=coachHistory.slice(-8);
       addCoachMessage("user",question);
       coachHistory.push({role:"user",content:question});
-      const pending=addCoachMessage("coach","Thinkingâ€¦","pending");
+      const pending=addCoachMessage("coach","Thinking…","pending");
       elements.coachQuestion.value="";
       elements.coachSend.disabled=true;
       logEvent("coach_question",{question});
@@ -933,4 +933,3 @@
   </script>
 </body>
 </html>
-
