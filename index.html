@@ -904,15 +904,17 @@
         pending.classList.remove("pending");
         pending.textContent=`Coach: ${reply}`;
         coachHistory.push({role:"assistant",content:reply});
-        elements.coachStatus.textContent="AI online";
+        logEvent("coach_reply",{source:data.source||"unknown"});
+        elements.coachStatus.textContent="Coach online";
         elements.coachStatus.classList.add("online");
       } catch {
         const reply=builtInCoachReply(question);
         pending.classList.remove("pending");
         pending.textContent=`Coach: ${reply}`;
         coachHistory.push({role:"assistant",content:reply});
-        elements.coachStatus.textContent="Built-in mode";
-        elements.coachStatus.classList.remove("online");
+        logEvent("coach_reply",{source:"client_fallback"});
+        elements.coachStatus.textContent="Coach ready";
+        elements.coachStatus.classList.add("online");
       } finally {
         elements.coachSend.disabled=false;
         elements.coachQuestion.focus();
@@ -926,8 +928,8 @@
     addCoachMessage("coach","Move the sensor or start a challenge. I can respond to the current fluids, depths, pressure reference, and your prediction.");
     fetch("/api/health")
       .then(response=>{ if(!response.ok) throw new Error(); return response.json(); })
-      .then(data=>{ elements.coachStatus.textContent=data.aiConfigured?"AI online":"Built-in mode"; elements.coachStatus.classList.toggle("online",Boolean(data.aiConfigured)); })
-      .catch(()=>{ elements.coachStatus.textContent="Built-in mode"; });
+      .then(()=>{ elements.coachStatus.textContent="Coach ready"; elements.coachStatus.classList.add("online"); })
+      .catch(()=>{ elements.coachStatus.textContent="Coach ready"; elements.coachStatus.classList.add("online"); });
 
     render();
   </script>
