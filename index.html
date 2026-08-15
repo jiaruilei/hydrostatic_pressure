@@ -128,6 +128,7 @@
     .coach-header { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px; }
     .coach-title { display:flex; align-items:center; gap:10px; color:#172b4d; font-size:18px; font-weight:850; }
     .coach-icon { display:grid; width:36px; height:36px; place-items:center; border-radius:12px; color:#fff; background:linear-gradient(135deg,#2563eb,#7c3aed); box-shadow:0 8px 18px rgba(37,99,235,.2); }
+    .coach-icon svg { width:22px; height:22px; }
     .coach-status { display:inline-flex; align-items:center; gap:6px; color:#5d6b7d; font-size:12px; }
     .coach-status::before { width:8px; height:8px; border-radius:50%; background:#f59e0b; content:""; }
     .coach-status.online::before { background:#10b981; }
@@ -354,7 +355,15 @@
 
     <section class="coach-card" aria-labelledby="coachTitle">
       <div class="coach-header">
-        <div class="coach-title" id="coachTitle"><span class="coach-icon">AI</span> AI Coach</div>
+        <div class="coach-title" id="coachTitle">
+          <span class="coach-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" focusable="false">
+              <path fill="currentColor" d="M12 2.5C9.5 6.2 6.5 9.4 6.5 13.2a5.5 5.5 0 0 0 11 0C17.5 9.4 14.5 6.2 12 2.5Z"/>
+              <path d="M8.7 14.1c1 .8 1.9 1.2 3.2 1.2 1.4 0 2.4-.5 3.4-1.3" fill="none" stroke="#93c5fd" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </span>
+          Prof. Gary's AI Proxy
+        </div>
         <span class="coach-status" id="coachStatus">Checking server…</span>
       </div>
       <div class="coach-log" id="coachLog" aria-live="polite"></div>
@@ -365,7 +374,7 @@
         <button type="button" data-question="What does the slope of the pressure graph mean?">Explain the graph</button>
       </div>
       <form class="coach-form" id="coachForm">
-        <textarea id="coachQuestion" maxlength="800" placeholder="Ask about the current pressure column…" aria-label="Question for the AI Coach"></textarea>
+        <textarea id="coachQuestion" maxlength="800" placeholder="Ask about the current pressure column…" aria-label="Question for Prof. Gary's AI Proxy"></textarea>
         <button type="submit" id="coachSend">Ask</button>
       </form>
     </section>
@@ -899,7 +908,7 @@
           body:JSON.stringify({question,context:coachContext(),history:priorHistory,sessionId:getCoachSessionId()}),
         });
         const data=await response.json().catch(()=>({}));
-        if (!response.ok) throw new Error(data.error||"AI Coach is unavailable.");
+        if (!response.ok) throw new Error(data.error||"Prof. Gary's AI Proxy is unavailable.");
         const reply=data.reply||builtInCoachReply(question);
         pending.classList.remove("pending");
         pending.textContent=`Coach: ${reply}`;
