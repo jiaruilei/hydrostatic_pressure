@@ -133,10 +133,10 @@ function formatPressureContext(context = {}) {
     ["Atmospheric pressure", `${pressure.atmosphericPressure.toFixed(1)} kPa`],
     ["Top layer enabled", pressure.topLayerEnabled ? "yes" : "no"],
     ["Top fluid", pressure.topFluid],
-    ["Top fluid density", pressure.topLayerEnabled ? `${pressure.topDensity} kg/mÂ³` : "not applicable"],
+    ["Top fluid density", pressure.topLayerEnabled ? `${pressure.topDensity} kg/m³` : "not applicable"],
     ["Top layer total depth", pressure.topLayerEnabled ? `${pressure.topLayerDepth} m` : "not applicable"],
     ["Bottom fluid", pressure.bottomFluid],
-    ["Bottom fluid density", `${pressure.bottomDensity} kg/mÂ³`],
+    ["Bottom fluid density", `${pressure.bottomDensity} kg/m³`],
     ["Bottom layer total depth", `${pressure.bottomLayerDepth} m`],
     ["Sensor depth below free surface", `${pressure.sensorDepth.toFixed(3)} m`],
     ["Sensor layer", pressure.sensorLayer],
@@ -270,4 +270,3 @@ app.listen(port, () => {
   console.log(`Hydrostatic-pressure lab listening on http://localhost:${port}`);
   console.log(`AI Coach model: ${model}`);
 });
-
