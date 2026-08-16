@@ -9,7 +9,7 @@ dotenv.config();
 
 const app = express();
 const port = Number(process.env.PORT) || 3000;
-const model = process.env.OPENAI_MODEL || "gpt-5.6-luna";
+const model = process.env.OPENAI_MODEL || "gpt-5.6-terra";
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
 const STUDY_COOKIE = "ce2134_study_assignment";
 const STUDY_COOKIE_MAX_AGE_SECONDS = 14 * 24 * 60 * 60;
