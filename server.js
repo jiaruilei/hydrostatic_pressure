@@ -114,7 +114,7 @@ function finiteNumber(value, min, max, fallback = null) {
 }
 
 function getPressureContext(context = {}) {
-  const gravity = 9.81;
+  const gravity = 9.80;
   const topLayerEnabled = Boolean(context.topLayerEnabled);
   const bottomDensity = finiteNumber(context.bottomDensity, 100, 14000, 1000);
   const topDensity = topLayerEnabled
