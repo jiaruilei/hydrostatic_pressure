@@ -506,13 +506,13 @@
       let parts;
       if (state.topEnabled && depth > state.topDepth) {
         const lowerDepth = depth-state.topDepth;
-        parts = `p<sub>g</sub> = (${state.topDensity}×${G.toFixed(2)}×${round(state.topDepth,2)} + ${state.bottomDensity}×${G.toFixed(2)}×${round(lowerDepth,2)})/1000 = ${round(gage)} kPa`;
+        parts = `p = (${state.topDensity}×${G.toFixed(2)}×${round(state.topDepth,2)} + ${state.bottomDensity}×${G.toFixed(2)}×${round(lowerDepth,2)})/1000 = ${round(gage)} kPa`;
       } else {
         const density = state.topEnabled ? state.topDensity : state.bottomDensity;
-        parts = `p<sub>g</sub> = ρgh = ${density}×${G.toFixed(2)}×${round(depth,2)}/1000 = ${round(gage)} kPa`;
+        parts = `p = ρgh = ${density}×${G.toFixed(2)}×${round(depth,2)}/1000 = ${round(gage)} kPa`;
       }
       if (state.reference === "absolute") {
-        parts += `; &nbsp;p<sub>abs</sub> = p<sub>atm</sub> + p<sub>g</sub> = ${round(expectedPressure())} kPa`;
+        parts += `; &nbsp;p<sub>abs</sub> = p<sub>atm</sub> + p = ${round(expectedPressure())} kPa`;
       }
       elements.equationText.innerHTML = parts;
     }
