@@ -4,6 +4,24 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Hydrostatic Pressure (Week 2)</title>
+  <script>
+    window.mathJaxReady = new Promise(resolve => { window.resolveMathJaxReady = resolve; });
+    window.MathJax = {
+      tex: {
+        inlineMath: [["\\(", "\\)"]],
+        displayMath: [["\\[", "\\]"]],
+        processEscapes: true,
+      },
+      chtml: { displayAlign: "left", displayIndent: "0" },
+      startup: {
+        ready() {
+          MathJax.startup.defaultReady();
+          window.resolveMathJaxReady();
+        },
+      },
+    };
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js"></script>
   <style>
     :root {
       --navy:#0b1930;
@@ -137,6 +155,8 @@
     .coach-message.coach { color:#1e3a8a; border:1px solid #dbeafe; background:#eff6ff; }
     .coach-message.user { margin-left:auto; color:#fff; background:var(--blue); }
     .coach-message.pending { color:#64748b; font-style:italic; }
+    .coach-message mjx-container { max-width:100%; overflow-x:auto; overflow-y:hidden; }
+    .coach-message mjx-container[display="true"] { margin:.45em 0 !important; text-align:left !important; }
     .coach-chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
     .coach-chips button { padding:7px 10px; border:1px solid #bdd4f5; border-radius:8px; color:#1d4ed8; background:#fff; font-size:12px; font-weight:700; }
     .coach-form { display:grid; grid-template-columns:1fr 92px; gap:9px; margin-top:10px; }
@@ -812,6 +832,26 @@
     elements.sensorTarget.addEventListener("pointercancel",()=>{ draggingSensor=false; });
 
     const coachHistory=[];
+    let mathTypesetQueue=Promise.resolve();
+
+    function typesetCoachMath(message,text) {
+      if (!text.includes("\\(") && !text.includes("\\[")) return;
+      mathTypesetQueue=mathTypesetQueue
+        .then(async()=>{
+          await window.mathJaxReady;
+          if (!window.MathJax?.typesetPromise) return;
+          window.MathJax.typesetClear?.([message]);
+          await window.MathJax.typesetPromise([message]);
+        })
+        .catch(error=>console.warn("MathJax typesetting failed:",error));
+    }
+
+    function setCoachMessageText(message,role,text) {
+      window.MathJax?.typesetClear?.([message]);
+      message.textContent=`${role==="user"?"You":"Coach"}: ${text}`;
+      typesetCoachMath(message,text);
+    }
+
     function coachContext() {
       const depth=state.sensorDepth;
       const topSubmerged=state.topEnabled?Math.min(depth,state.topDepth):0;
@@ -857,7 +897,7 @@
     function addCoachMessage(role,text,extraClass="") {
       const message=document.createElement("div");
       message.className=`coach-message ${role} ${extraClass}`.trim();
-      message.textContent=`${role==="user"?"You":"Coach"}: ${text}`;
+      setCoachMessageText(message,role,text);
       elements.coachLog.appendChild(message);
       elements.coachLog.scrollTop=elements.coachLog.scrollHeight;
       return message;
@@ -868,21 +908,21 @@
       const c=coachContext();
       if (q.includes("hint")) {
         if (c.topLayerEnabled && c.sensorDepth>c.topLayerDepth) {
-          return `Split the column at the interface. Calculate ρgh for ${round(c.topDepthAboveSensor,2)} m of ${c.topFluid}, then for ${round(c.bottomDepthAboveSensor,2)} m of ${c.bottomFluid}, and add them.${c.pressureReference==="absolute"?" Add atmospheric pressure last.":""}`;
+          return `Split the column at the interface. Calculate \\(\\rho g h\\) for ${round(c.topDepthAboveSensor,2)} m of ${c.topFluid}, then for ${round(c.bottomDepthAboveSensor,2)} m of ${c.bottomFluid}, and add them.${c.pressureReference==="absolute"?" Add atmospheric pressure last.":""}`;
         }
-        return `Use the density of ${c.sensorLayer} and the vertical depth ${round(c.sensorDepth,2)} m in p = ρgh.${c.pressureReference==="absolute"?" Then add atmospheric pressure.":" Convert Pa to kPa by dividing by 1000."}`;
+        return `Use the density of ${c.sensorLayer} and the vertical depth ${round(c.sensorDepth,2)} m in \\(p = \\rho g h\\).${c.pressureReference==="absolute"?" Then add atmospheric pressure.":" Convert Pa to kPa by dividing by 1000."}`;
       }
       if (q.includes("gage") || q.includes("absolute") || q.includes("atmos")) {
-        return `Gage pressure is measured relative to local atmospheric pressure. Absolute pressure is measured relative to a perfect vacuum: p_abs = p_atm + p_g. At the open free surface, gage pressure is 0 kPa while absolute pressure is ${round(c.atmosphericPressure,1)} kPa.`;
+        return `Gage pressure is measured relative to local atmospheric pressure. Absolute pressure is measured relative to a perfect vacuum: \\(p_{\\mathrm{abs}} = p_{\\mathrm{atm}} + p\\). At the open free surface, gage pressure is 0 kPa while absolute pressure is ${round(c.atmosphericPressure,1)} kPa.`;
       }
       if (q.includes("slope") || q.includes("graph")) {
-        return `The pressure-depth slope is dp/dh = ρg. A denser fluid makes the graph steeper. With two layers, the change in slope marks the fluid interface; pressure itself remains continuous there.`;
+        return `The pressure-depth slope is \\(\\mathrm{d}p/\\mathrm{d}h = \\rho g\\). A denser fluid makes the graph steeper. With two layers, the change in slope marks the fluid interface; pressure itself remains continuous there.`;
       }
       if (q.includes("layer") || q.includes("add")) {
-        return `Each layer adds the weight per unit area of fluid above the sensor. For two layers, p_g = ρ₁gh₁ + ρ₂gh₂. Use each density only with its own vertical depth.`;
+        return `Each layer adds the weight per unit area of fluid above the sensor. For two layers, \\(p = \\rho_1 g h_1 + \\rho_2 g h_2\\). Use each density only with its own vertical depth.`;
       }
       if (q.includes("unit") || q.includes("kpa") || q.includes("pa")) {
-        return `Using density in kg/m³, g in m/s², and depth in m gives pressure in pascals. Divide by 1000 to report kilopascals.`;
+        return `Using density in \\(\\mathrm{kg/m^3}\\), \\(g\\) in \\(\\mathrm{m/s^2}\\), and depth in \\(\\mathrm{m}\\) gives pressure in pascals. Divide by 1000 to report kilopascals.`;
       }
       if (state.mode==="challenge" && !state.revealed) {
         return `Start with the fluid directly below the free surface and account for every layer above the sensor. I will keep the numerical answer hidden while the challenge is active.`;
@@ -911,7 +951,7 @@
         if (!response.ok) throw new Error(data.error||"Prof. Gary's AI Proxy is unavailable.");
         const reply=data.reply||builtInCoachReply(question);
         pending.classList.remove("pending");
-        pending.textContent=`Coach: ${reply}`;
+        setCoachMessageText(pending,"coach",reply);
         coachHistory.push({role:"assistant",content:reply});
         logEvent("coach_reply",{source:data.source||"unknown"});
         elements.coachStatus.textContent="Coach online";
@@ -919,7 +959,7 @@
       } catch {
         const reply=builtInCoachReply(question);
         pending.classList.remove("pending");
-        pending.textContent=`Coach: ${reply}`;
+        setCoachMessageText(pending,"coach",reply);
         coachHistory.push({role:"assistant",content:reply});
         logEvent("coach_reply",{source:"client_fallback"});
         elements.coachStatus.textContent="Coach ready";
