@@ -219,25 +219,25 @@ function ruleBasedCoachReply(question, pressure) {
       pressure.topLayerEnabled
       && pressure.sensorDepth > pressure.topLayerDepth
     ) {
-      return `Split the column at the interface. Calculate ρgh for ${readableNumber(pressure.topDepthAboveSensor)} m of ${pressure.topFluid}, then for ${readableNumber(pressure.bottomDepthAboveSensor)} m of ${pressure.bottomFluid}, and add them.${pressure.pressureReference === "absolute" ? " Add atmospheric pressure last." : ""}`;
+      return `Split the column at the interface. Calculate \\(\\rho g h\\) for ${readableNumber(pressure.topDepthAboveSensor)} m of ${pressure.topFluid}, then for ${readableNumber(pressure.bottomDepthAboveSensor)} m of ${pressure.bottomFluid}, and add them.${pressure.pressureReference === "absolute" ? " Add atmospheric pressure last." : ""}`;
     }
-    return `Use the density of ${pressure.sensorLayer} and the vertical depth ${readableNumber(pressure.sensorDepth)} m in p = ρgh.${pressure.pressureReference === "absolute" ? " Then add atmospheric pressure." : " Convert Pa to kPa by dividing by 1000."}`;
+    return `Use the density of ${pressure.sensorLayer} and the vertical depth ${readableNumber(pressure.sensorDepth)} m in \\(p = \\rho g h\\).${pressure.pressureReference === "absolute" ? " Then add atmospheric pressure." : " Convert Pa to kPa by dividing by 1000."}`;
   }
 
   if (q.includes("gage") || q.includes("absolute") || q.includes("atmos")) {
-    return `Gage pressure is measured relative to local atmospheric pressure. Absolute pressure is measured relative to a perfect vacuum: p_abs = p_atm + p_g. At the open free surface, gage pressure is 0 kPa while absolute pressure is ${readableNumber(pressure.atmosphericPressure, 1)} kPa.`;
+    return `Gage pressure is measured relative to local atmospheric pressure. Absolute pressure is measured relative to a perfect vacuum: \\(p_{\\mathrm{abs}} = p_{\\mathrm{atm}} + p\\). At the open free surface, gage pressure is 0 kPa while absolute pressure is ${readableNumber(pressure.atmosphericPressure, 1)} kPa.`;
   }
 
   if (q.includes("slope") || q.includes("graph")) {
-    return "The pressure-depth slope is dp/dh = ρg. A denser fluid makes the graph steeper. With two layers, the change in slope marks the fluid interface; pressure itself remains continuous there.";
+    return "The pressure-depth slope is \\(\\mathrm{d}p/\\mathrm{d}h = \\rho g\\). A denser fluid makes the graph steeper. With two layers, the change in slope marks the fluid interface; pressure itself remains continuous there.";
   }
 
   if (q.includes("layer") || q.includes("add")) {
-    return "Each layer adds the weight per unit area of fluid above the sensor. For two layers, p_g = ρ₁gh₁ + ρ₂gh₂. Use each density only with its own vertical depth.";
+    return "Each layer adds the weight per unit area of fluid above the sensor. For two layers, \\(p = \\rho_1 g h_1 + \\rho_2 g h_2\\). Use each density only with its own vertical depth.";
   }
 
   if (q.includes("unit") || q.includes("kpa") || q.includes("pa")) {
-    return "Using density in kg/m³, g in m/s², and depth in m gives pressure in pascals. Divide by 1000 to report kilopascals.";
+    return "Using density in \\(\\mathrm{kg/m^3}\\), \\(g\\) in \\(\\mathrm{m/s^2}\\), and depth in \\(\\mathrm{m}\\) gives pressure in pascals. Divide by 1000 to report kilopascals.";
   }
 
   if (pressure.mode === "challenge" && !pressure.answerRevealed) {
@@ -255,7 +255,9 @@ function coachInstructions() {
     "When Challenge mode is active and Answer revealed is no, scaffold the next step without stating the final numerical answer unless the student explicitly asks to reveal it.",
     "Lead the student with one or two short reasoning steps before giving a conclusion.",
     "Correct misconceptions gently and keep replies classroom-friendly and under 140 words.",
-    "Use plain text and readable equations; do not use markdown tables.",
+    "Format every mathematical expression as TeX using \\( ... \\) for inline math or \\[ ... \\] for display math; do not use dollar-sign delimiters.",
+    "Use TeX commands such as \\rho, subscripts, fractions, and \\mathrm{} for units, while keeping ordinary prose outside math delimiters.",
+    "Do not use markdown tables.",
   ].join(" ");
 }
 
