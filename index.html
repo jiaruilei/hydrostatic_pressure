@@ -151,12 +151,12 @@
     .coach-status::before { width:8px; height:8px; border-radius:50%; background:#f59e0b; content:""; }
     .coach-status.online::before { background:#10b981; }
     .coach-log { height:340px; overflow:auto; padding:12px; border:1px solid #d7e2ef; border-radius:11px; background:#fff; }
-    .coach-message { width:fit-content; max-width:88%; margin:0 0 9px; padding:9px 11px; border-radius:11px; font-size:14px; line-height:1.45; white-space:pre-wrap; }
+    .coach-message { width:fit-content; max-width:88%; margin:0 0 9px; padding:9px 11px; border-radius:11px; font-size:14px; line-height:1.4; white-space:pre-wrap; }
     .coach-message.coach { color:#1e3a8a; border:1px solid #dbeafe; background:#eff6ff; }
     .coach-message.user { margin-left:auto; color:#fff; background:var(--blue); }
     .coach-message.pending { color:#64748b; font-style:italic; }
     .coach-message mjx-container { max-width:100%; overflow-x:auto; overflow-y:hidden; }
-    .coach-message mjx-container[display="true"] { margin:.45em 0 !important; text-align:left !important; }
+    .coach-message mjx-container[display="true"] { margin:.12em 0 !important; text-align:left !important; }
     .coach-chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
     .coach-chips button { padding:7px 10px; border:1px solid #bdd4f5; border-radius:8px; color:#1d4ed8; background:#fff; font-size:12px; font-weight:700; }
     .coach-form { display:grid; grid-template-columns:1fr 92px; gap:9px; margin-top:10px; }
@@ -847,9 +847,13 @@
     }
 
     function setCoachMessageText(message,role,text) {
+      const compactText=String(text)
+        .replace(/[ \t]*\n+[ \t]*(?=\\\[)/g,"")
+        .replace(/(\\\])[ \t]*\n+[ \t]*/g,"$1")
+        .replace(/\n{3,}/g,"\n\n");
       window.MathJax?.typesetClear?.([message]);
-      message.textContent=`${role==="user"?"You":"Coach"}: ${text}`;
-      typesetCoachMath(message,text);
+      message.textContent=`${role==="user"?"You":"Coach"}: ${compactText}`;
+      typesetCoachMath(message,compactText);
     }
 
     function coachContext() {
